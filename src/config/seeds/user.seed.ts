@@ -27,5 +27,3 @@ export const seedUsers = async (): Promise<void> => {
        console.log(colors.red.inverse(`${err}`));
    }
 }
-
-
