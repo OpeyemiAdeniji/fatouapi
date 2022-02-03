@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "NODE_ENV=production ts-node src/server.ts",
+    "start": "ts-node src/server.ts",
     "dev": "ts-node-dev src/server.ts",
     "seed-d": "ts-node-dev remover.ts -d",
     "pretest": "NODE_ENV=test npm run seed-d",
