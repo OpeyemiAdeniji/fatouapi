@@ -1,0 +1,38 @@
+[
+    { 
+        "name": "CAN_CREATE",
+        "description": "A user can create or add records to the resource",
+        "slug": "can-create"
+    },
+
+    { 
+        "name": "CAN_READ",
+        "description": "A user can read/see details of a record in a resource",
+        "slug": "can-read"
+    },
+
+    { 
+        "name": "CAN_UPDATE",
+        "description": "A user can update/modify details of a record in a resource",
+        "slug": "can-update"
+    },
+
+    { 
+        "name": "CAN_DELETE",
+        "description": "A user can delete a record in a resource",
+        "slug": "can-delete"
+    },
+
+    { 
+        "name": "IS_DENIED",
+        "description": "A user is denied all access to operations on a resource",
+        "slug": "is-denied"
+    },
+
+    { 
+        "name": "IS_ALLOWED",
+        "description": "A user is allowed all access to operations on a resource",
+        "slug": "is-allowed"
+    }
+
+]

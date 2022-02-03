@@ -1,0 +1,13 @@
+[
+    {
+        "firstName": "Super",
+        "lastName": "Administrator",
+        "email": "admin@fatou.com",
+        "password": "#_sonofGod1",
+        "isSuper": true,
+        "isActivated": true,
+        "isAdmin": false,
+        "isUser": true,
+        "isActive": true
+    }
+]
