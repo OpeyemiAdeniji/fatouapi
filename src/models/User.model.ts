@@ -68,6 +68,10 @@ const UserSchema = new mongoose.Schema(
 			type: String
 		},
 
+		companyName: {
+			type: String
+		},
+
         email: {
 			type: String,
 			required: [true, 'email is required'],
