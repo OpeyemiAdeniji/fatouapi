@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import ErrorResponse from '../utils/error.util';
 import asyncHandler from '../middleware/async.mw';
 
+// models
 import User from '../models/User.model';
 import Role from '../models/Role.model';
 
