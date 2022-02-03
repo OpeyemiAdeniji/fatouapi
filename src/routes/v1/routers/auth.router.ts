@@ -11,6 +11,6 @@ import { protect, authorize } from '../../../middleware/auth.mw';
 
 const roles = ['superadmin', 'admin']
 
-router.post('/register', vcd, addRecruiters);
+router.post('/recruiters', vcd, addRecruiters);
 
 export default router;
