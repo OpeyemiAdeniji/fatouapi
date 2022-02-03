@@ -85,7 +85,7 @@ app.get('/', (req: Request, res: Response, next: NextFunction) => {
         errors: [],
         message: 'successful',
         data: {
-            name: 'saidatech-identity-service',
+            name: 'fatou-recruiter-service',
             version: '1.0.0'
         },
         status: 200
