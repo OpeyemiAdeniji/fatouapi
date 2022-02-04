@@ -16,7 +16,6 @@ declare global {
 
 // protect routes
 export const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-
 	let token: string = '';		
 
 	if (
@@ -27,19 +26,13 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
 		token = req.headers.authorization.split(' ')[1]; //get the token
 	}
 
-	// set token from cookie
-	else if(req.cookies.token){
-	    token = req.cookies.token
-	}
-
 	try {
 		//make sure token exists
 		if (!token) {
             return next(new ErrorResponse('Invalid token', 401, ['user not authorized to access this route']))
-		}	
+		}
 
 		const jwtData = jwt.verify(token, process.env.JWT_SECRET || '') as JwtPayload;
-
 		req.user = await User.findOne({_id: jwtData.id});
 
 		if(req.user){
@@ -48,43 +41,45 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
             return next(new ErrorResponse('Invalid token', 401, ['user not authorized to access this route']))
 		}
 	} catch (err) {
-        return next(new ErrorResponse('Invalid token', 401, ['user not authorized to access this route']))
+		return next(new ErrorResponse('Invalid token', 401, ['user not authorized to access this route']))
 	}
 });
 
 // Grant access to specific roles
 //roles are string array of roles (e.g. ['admin', 'superadmin'])
-export const authorize = asyncHandler (async(roles: Array<string>, req: Request, res: Response, next: NextFunction) => {
+export const authorize = (roles:Array<string>) => {
     let allRoles: any = [];
 
+	return asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 		// get the authorized roles objects from db
-		// this method returns a promise by default		
-		await getRolesByName(roles).then((resp) => {
-			allRoles = [...resp]; // use the spread operator
+		// this method returns a promise by default
+		
+		await getRolesByName(roles).then((r) => {
+			allRoles = [...r]; // use the spread operator
 		});
 
 		// get authorized role IDs
 		const ids = allRoles.map((e: any) => { return e._id });
 
 		if (!req.user) {
-            return next (new ErrorResponse('unauthorized!', 401, ['user is not authorized to access this route']))
+			return next(new ErrorResponse('Invalid token', 401, ['user not authorized to access this route']))
+
 		}
 
 		// check if id exists
 		const flag = await checkRole(ids, req.user.role);
 
 		if (!flag) {
-            return next (new ErrorResponse('unauthorized!', 401, ['user is not authorized to access this route']))
+			return next(new ErrorResponse('Invalid token', 401, ['user not authorized to access this route']))
 		} else {
 			return next();
 		}
 	});
-
+};
 
 // use brute force to compare roleIDs
-const checkRole = (roleIds: Array<string>, userRoles: Array<string>): boolean => {
-
-    let flag: boolean = false;
+const checkRole = (roleIds: Array<string> , userRoles: Array<string>) => {
+	let flag = false;
 
 	for (let i = 0; i < roleIds.length; i++) {
 		for (let j = 0; j < userRoles.length; j++) {

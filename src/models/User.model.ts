@@ -8,6 +8,14 @@ import Role from './Role.model';
 interface IUserModel extends mongoose.Model<IUserDoc> {
     build(attrs: any): IUserDoc,
 	getSignedJwtToken(): any,
+	matchPassword(password: string): any,
+	matchEmailCode(code: string): boolean,
+	matchInviteLink(code: string): boolean,
+	increaseLoginLimit(): number,
+	checkLockedStatus(): boolean,
+	getResetPasswordToken(): any,
+	getActivationToken(): any,
+	getInviteToken(): any;
 	hasRole(role: any, roles: Array<ObjectId>): boolean,
 	findByEmail(email: string): IUserDoc,
 }
@@ -16,14 +24,18 @@ interface IUserDoc extends mongoose.Document {
 
     firstName: string;
     lastName: string;
-	companyName: string;
 	phoneNumber: string;
 	email: string;
+	companyName: string;
+	password: string;
+	recruiterType: string;
 
 	activationToken: string | undefined;
 	activationTokenExpire: Date | undefined;
 	resetPasswordToken: string | undefined;
 	resetPasswordTokenExpire: Date | undefined;
+	inviteToken: string | undefined;
+	inviteTokenExpire: Date | undefined;
 	emailCode: string | undefined;
 	emailCodeExpire: Date | undefined;
 
@@ -32,6 +44,9 @@ interface IUserDoc extends mongoose.Document {
 	isAdmin: boolean;
 	isUser: boolean;
 	isActive: boolean;
+
+	loginLimit: number;
+	isLocked: boolean;
 
 	// relationships
 	country: mongoose.Schema.Types.ObjectId | any;
@@ -48,6 +63,14 @@ interface IUserDoc extends mongoose.Document {
 	// props for the model
 	build(attrs: any): IUserDoc,
 	getSignedJwtToken(): any,
+	matchPassword(password: string): any,
+	matchEmailCode(code: string): boolean,
+	matchInviteLink(link: string): boolean,
+	increaseLoginLimit(): number,
+	checkLockedStatus(): boolean,
+	getResetPasswordToken(): any,
+	getActivationToken(): any,
+	getInviteToken(): any;
 	hasRole(role: any, roles: Array<ObjectId>): Promise<boolean>,
 	findByEmail(email: string): IUserDoc,
 
@@ -80,6 +103,18 @@ const UserSchema = new mongoose.Schema(
 				/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
 				'a valid email is required',
 			],
+		},
+
+        password: {
+			type: String,
+			required: [true, 'password is required'],
+			minlength: [8, 'Password cannot be less than 8 characters'],
+			select: false,
+		},
+
+		recruiterType: {
+			type: String,
+			enum: ['external', 'internal'],
 		},
 
         activationToken: String,
@@ -116,7 +151,21 @@ const UserSchema = new mongoose.Schema(
 			default: false
 		},
 
-    
+        loginLimit: {
+			type: Number,
+			default: 0
+		},
+
+		isLocked: {
+			type: Boolean,
+			default: false
+		},
+
+        country: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Country',
+		},
+
 		status: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: 'Status',
@@ -127,6 +176,13 @@ const UserSchema = new mongoose.Schema(
 				type: mongoose.Schema.Types.ObjectId,
 				ref: 'Role',
 				required: true,
+			},
+		],
+
+		permissions: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: 'Permission',
 			},
 		],
 
@@ -147,11 +203,93 @@ const UserSchema = new mongoose.Schema(
 
 UserSchema.set('toJSON', {getters: true, virtuals: true});
 
+// Encrypt password using bcrypt
+UserSchema.pre<IUserDoc>('save', async function (next) {
+	if (!this.isModified('password')) {
+		return next();
+	}
+
+	const salt = await bcrypt.genSalt(10);
+	this.password = await bcrypt.hash(this.password, salt);
+});
+
 // Sign JWT and return
 UserSchema.methods.getSignedJwtToken = function () {
 	return jwt.sign({ id: this._id, email: this.email, roles: this.roles }, process.env.JWT_SECRET as string, {
 		expiresIn: process.env.JWT_EXPIRE,
 	});
+};
+
+// Match user password
+UserSchema.methods.matchPassword = async function (pass: any) {
+	return await bcrypt.compare(pass, this.password);
+};
+
+// Match email verification code
+UserSchema.methods.matchEmailCode = function (code: any) {
+	return this.emailCode === code ? true : false;
+}
+
+// increase login limit
+UserSchema.methods.increaseLoginLimit = function () {
+	const limit = this.loginLimit + 1
+	return limit;
+}
+
+// check locked status
+UserSchema.methods.checkLockedStatus = function () {
+	return this.isLocked;
+}
+
+//Generate and hash password token
+UserSchema.methods.getResetPasswordToken = function () {
+	// Generate token
+	const resetToken = crypto.randomBytes(20).toString('hex');
+
+	// Hash the token and set to resetPasswordToken field
+	this.resetPasswordToken = crypto
+		.createHash('sha256')
+		.update(resetToken)
+		.digest('hex');
+
+	// Set expire
+	this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+	return resetToken;
+};
+
+//Generate and hash activation token
+UserSchema.methods.getActivationToken = function () {
+	// Generate token
+	const token = crypto.randomBytes(20).toString('hex');
+
+	// Hash the token and set to resetPasswordToken field
+	this.activationToken = crypto
+		.createHash('sha256')
+		.update(token)
+		.digest('hex');
+
+	// Set expire
+	this.activationTokenExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+	return token;
+};
+
+//Generate and hash invite token
+UserSchema.methods.getInviteToken = function () {
+	// Generate token
+	const token = crypto.randomBytes(20).toString('hex');
+
+	// Hash the token and set to resetPasswordToken field
+	this.inviteToken = crypto
+		.createHash('sha256')
+		.update(token)
+		.digest('hex');
+
+	// Set expire
+	this.inviteTokenExpire = Date.now() + 1440 * 60 * 1000; // 24 hours
+
+	return token;
 };
 
 // Find out if user has a role
